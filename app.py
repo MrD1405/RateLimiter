@@ -2,23 +2,24 @@ from flask import Flask , render_template , request , jsonify
 import os
 from dotenv import load_dotenv
 import datetime
+import redis
 
-from database import Database
 from authentication import authenticate , loginUser , UsernameAlreadyExistsError
+from rate_limit import rate_limit
 
 app = Flask(__name__)
 load_dotenv()
 
-database = Database()
-counter=0 
 
 @app.route('/',methods=['GET'])
 def homepage():
     return render_template('index.html')
 
 @app.route('/test',methods=['GET'])
-def test():
-    return "This is test page"
+@authenticate
+@rate_limit
+def test(username):
+    return jsonify({'message':"This is test page"}) , 200
 
 @app.route('/login',methods=['POST'])
 def login():
@@ -35,6 +36,7 @@ def login():
         return jsonify({'message':'Username already exists'}) , 409
     
 @app.route('/loginTest',methods=['GET'])
+@rate_limit
 @authenticate
 def test_login(username):
     global counter
