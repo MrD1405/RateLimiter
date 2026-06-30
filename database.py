@@ -1,6 +1,7 @@
 import psycopg
 import os
 from dotenv import load_dotenv
+import redis
 
 load_dotenv()
 
@@ -26,3 +27,12 @@ class Database():
     
     def make_schema(self):
         self.cursor.execute("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY , username VARCHAR(255) UNIQUE NOT NULL , password VARCHAR(255) NOT NULL)")
+        
+class Redis():
+    def __init__(self):
+        self.conn=None
+    def make_connection(self):
+        self.conn=redis.Redis(host='localhost',port='6379',decode_responses=True)
+    def end_connection(self):
+        self.conn.close()
+        self.conn = None
