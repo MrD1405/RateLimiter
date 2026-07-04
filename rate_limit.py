@@ -4,6 +4,7 @@ import jwt
 import os
 from dotenv import load_dotenv
 from database import Database , Redis
+from datetime import datetime
 
 load_dotenv()
 database = Database()
@@ -15,14 +16,17 @@ def rate_limit(f):
         username=kwargs['username']
         redis.make_connection()
         r=redis.conn
-        userVisitCounter=int(r.get(username))
-        print(f"userVisitCounter : {userVisitCounter}")
-        if userVisitCounter:
-            if userVisitCounter > 10:
-                return jsonify({'message':'Exceeded Rate Limit'}) , 429
-            r.incr(username)
+        now=datetime.now()
+        now=now.strftime("%Y-%m-%d %H:%M")
+        username=f"username:{now}"
+        userVisitCounter=r.get(username)
+        userVisitCounter = int(userVisitCounter) if userVisitCounter else userVisitCounter
+        if userVisitCounter == None:
+            r.set(username,100,ex=60)
+        elif userVisitCounter <=0 :
+            return jsonify({'message':'Exceeded Rate Limit'}) , 429
         else:
-            r.set(username,1)
+            r.decr(username)
         return f(*args , **kwargs)
     return decorator
             

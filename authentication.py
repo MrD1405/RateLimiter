@@ -31,9 +31,6 @@ def authenticate(f):
         except jwt.InvalidTokenError:
             print('Invalid Token')
             return jsonify({'message':'Invalid token'}) , 401
-        if not doesUserExist(data['username']):
-            print('User not existing')
-            return jsonify({'message':'User doesnt exist'}) , 401
         return f(username=data['username'] , *args , **kwargs)
             
     return decorator
