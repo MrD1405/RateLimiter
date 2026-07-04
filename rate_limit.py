@@ -8,7 +8,8 @@ from datetime import datetime
 
 load_dotenv()
 
-
+global tokensPerSecond
+tokensPerSecond=1.66
 class RateLimitError(Exception):
     pass
 database = Database()
@@ -40,4 +41,33 @@ def fixedWindow(username):
     else:
         r.decr(username)
     redis.end_connection()
+
+def TokenBucket(username):
+    now =datetime.now()
+    redis.make_connection()
+    r=redis.conn
+    userVisitCounter=r.get(username)
+    if userVisitCounter == None:
+        r.hset("userVisits" ,username , {"lastHit":now , "tokensAvailable":100})
+    else :
+        userVisitDetails=r.hget("userVisits", username)
+        lastHit=userVisitDetails.get("lastHit")
+        tokensAvailable=userVisitDetails.get("tokensAvailable")
+        lastHitDatetime=datetime.strptime(lastHit,"%Y-%m-%d %H:%M:%S")
+        datetimeDiff=now-lastHitDatetime
+        datetimeDiff=datetimeDiff.seconds()
+        additionalTokens=0
+        if datetimeDiff > 60 :
+            additionalTokens=100-tokensAvailable
+        else:
+            if datetimeDiff >= 0:
+                additionalTokens = round(datetimeDiff*tokensPerSecond)
+        if additionalTokens:
+            r.hset("userVisits",username,{"lastHit":datetime.now() , "tokensAvailable":tokensAvailable + additionalTokens-1})
+        else:
+            raise RateLimitError
+    return
+            
+            
+        
             
